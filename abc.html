@@ -1,0 +1,26 @@
+<html>
+<head>
+	<title>hello world</title>
+</head>
+<body>
+
+</body>
+<script>
+	function  handleSpeak(text) {
+        this.synth = window.speechSynthesis;
+        this.msg = new SpeechSynthesisUtterance();
+		this.msg.text = text; // 文字内容
+		this.msg.lang = "zh-CN"; // 使用的语言:中文
+		this.msg.volume = 5; // 声音音量：1
+		this.msg.rate = 1; // 语速：1
+		this.msg.pitch = 2; // 音高：1
+		let voices=this.synth.getVoices()
+		this.msg.voice=voices.filter(function(voice) { return voice.localService == true && voice.lang == "zh-CN"; })[0];
+		this.synth.speak(this.msg); // 播放
+	}
+	
+	console.log("Xxxx");
+	handleSpeak("你好");
+	console.log("end");
+</script>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>canvas游戏</title>
+<script type="text/javascript" src="jquery-1.4.4.min.js"></script>
+<style>
+    ul{
+        clear:both;
+        margin-bottom:2px;
+    }
+
+    ul li{
+        float:left;
+        list-style:none;
+        display:block;
+        width:140px;
+        cursor:pointer;
+        text-align:center;
+    }
+    
+    .liselected{
+        background-color:#0089ff;
+    }
+    
+    .liunselected{
+       background-color:transparent; 
+    }
+</style>
+</head>
+<body>
+	<div style="width:80%;margin:0 auto;">
+		<div>
+			<ul>
+				<li id="xiangqi_v6.0.html" class="liselected">象棋</li>
+				<li id="trafficRunSmooth.html">红绿灯1</li>
+				<li id="trafficSignal.html">红绿灯2</li>
+				<li id="tank_p1p2.html">坦克1</li>
+				<li id="tank_construct.html">坦克2</li>
+				<li id="pintu.html">拼图</li>
+				<li id="puke.html">扑克</li>
+				<li id="wuziqi.html">五子棋</li>
+			</ul>
+			<ul>
+				<li id="snake.html">贪吃蛇</li>
+				<li id="plane.html">飞机大战</li>
+				<li id="ball.html">桌球</li>
+				<li id="snow/snow.html">雪花</li>
+				<li id="shootFace/picTank.html">射击</li>
+				<li id="russia.html">方块1</li>
+				<li id="myrussia.html">方块2</li>
+				<li id="choujiang.html">抽奖</li>
+				<!--<li id="test222">测试</li>-->
+			</ul>
+		</div>
+		
+		<div>
+			<iframe width="1500" height="800" id="iframePage"></iframe>
+		</div>
+	</div>	
+    <script>
+        var baseUrl=window.location.href.replace("index.html","");
+        $("#iframePage").attr("src",baseUrl+"xiangqi_v6.0.html")
+    
+        $("li").click(function(){
+            var toId = $(this).attr("id");
+			if (toId=="test222"){
+				$.ajax({
+					type: 'GET',
+					async:false,
+					url: 'http://192.168.1.3:8080/znl/wd/getLogInfo.do',
+					dataType: 'json',
+					success: function(result) {
+						console.log(result);
+					},
+					failed:function(result){
+					}
+				});	
+			}else{
+				var iframeUrl = baseUrl+toId;
+				$("#iframePage").attr("src",iframeUrl);
+				
+				$("ul li").removeClass("liselected").addClass("liunselected");
+				$(this).addClass("liselected").removeClass("liunselected");
+			}
+        })
+    </script>
+</body>
+
+</html>
