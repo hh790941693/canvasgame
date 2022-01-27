@@ -1,0 +1,397 @@
+<html>
+<head>
+    <title>照片墙</title>
+    <script type="text/javascript" src="jquery-1.4.4.min.js"></script>
+</head>
+
+<body>
+    <div style='margin:0 auto;width:900px;height:700px;'>
+        <canvas id="canvas" style='background-color:black;'></canvas>
+    </div>    
+
+    <script>
+        var canvas = document.getElementById("canvas");
+        canvas.width = 800;
+        canvas.height = 600;
+        var ctx = canvas.getContext("2d");
+        var PIC_ARR = new Array();
+        var PIC_W = 50;
+        var PIC_H = 50;
+        var OBJ_ID = 0;    
+        var IMAGE_OBJ_ARR = new Array();
+        var CHAR_OBJ_ARR = new Array();
+        var OBJ_CNT_DICT = {};
+        var BOMB_ARR = new Array();
+        var G_CYCLE = 0;
+        var SCORE = 0;
+        
+        var BOMB_IMAGE = new Image();
+        BOMB_IMAGE.src="bomb.jpg";
+        
+        Array.prototype.removeArrElement = function(obj){
+            for (var i=0;i<this.length;i++){
+                if(obj === this[i]){
+                    this.splice(i,1);
+                    return;
+                }
+            }
+        }
+        
+        initImage();
+        var PLAYER_OBJ = new Player(canvas.width/2,canvas.height-25,50,25,10);
+        window.addEventListener("keydown",playerKeyListener);
+        
+        function playerKeyListener(event){
+			var key_state = (event.type == "keydown") ? true:false;
+			var keyCode = event.keyCode;
+            //console.log("keyCode:"+keyCode);
+            if (key_state){
+                if (keyCode==37 || keyCode==65){
+                    //console.log("左移动");
+                    PLAYER_OBJ.x -= PLAYER_OBJ.speed;
+                } else if (keyCode==38){
+                    //console.log("上移动");
+                } else if (keyCode==39 || keyCode==68){
+                    //console.log("右移动");
+                    PLAYER_OBJ.x += PLAYER_OBJ.speed;
+                } else if (keyCode==40){
+                    //console.log("下移动");
+                } else if (keyCode == 32){
+                    //console.log("发射");
+                    //发射
+                    PLAYER_OBJ.shoot();
+                }else{
+                    for (var i=0;i<CHAR_OBJ_ARR.length;i++){
+                        var tmpCode = parseInt(CHAR_OBJ_ARR[i].code);
+                        console.log("keyCode:"+keyCode+"   tmpCode:"+tmpCode);
+                        if (parseInt(keyCode) == tmpCode-32){
+                            CHAR_OBJ_ARR.removeArrElement(CHAR_OBJ_ARR[i]);
+                        }
+                    }
+                }
+                if (PLAYER_OBJ.x < 0){
+                    PLAYER_OBJ.x = 0;
+                }
+                
+                if (PLAYER_OBJ.x > canvas.width-PIC_W){
+                    PLAYER_OBJ.x = canvas.width-PIC_W;
+                }
+            }
+		}
+        
+        function initImage(){
+            var IMAGE1 = new Image();
+            IMAGE1.src="znl.jpg";
+            
+            var IMAGE2 = new Image();
+            IMAGE2.src="ldh.jpg";
+            
+            var IMAGE3 = new Image();
+            IMAGE3.src="pxh.jpg";
+            
+            var IMAGE4 = new Image();
+            IMAGE4.src="qzx.jpg";
+            
+            var IMAGE5 = new Image();
+            IMAGE5.src="syx.jpg";
+            
+            var IMAGE6 = new Image();
+            IMAGE6.src="csy.jpg";
+            
+            IMAGE_OBJ_ARR.push(IMAGE1);
+            IMAGE_OBJ_ARR.push(IMAGE2);
+            IMAGE_OBJ_ARR.push(IMAGE3);
+            IMAGE_OBJ_ARR.push(IMAGE4);
+            IMAGE_OBJ_ARR.push(IMAGE5);
+            IMAGE_OBJ_ARR.push(IMAGE6);
+
+            for (var i=1;i<=15;i++){
+                var img = new Image();
+                img.src = i+".jpg";
+                IMAGE_OBJ_ARR.push(img);
+            }    
+        }
+        
+        function randomNumber(start,end){
+            var range = end-start;
+            var rand = Math.random();
+            var num = start + Math.round(rand*range);
+
+            return num;
+        }
+        
+        function getTwoPointDistance(x1,y1,x2,y2){
+            var xDistance = x1 - x2;
+            var yDistance = y1 - y2;
+            var towPointDistance = Math.sqrt(Math.pow(xDistance,2) + Math.pow(yDistance,2));
+
+            return towPointDistance
+        }
+        
+        function randomRgb(){
+            var red = randomNumber(0,255);
+            var green = randomNumber(0,255);
+            var blue = randomNumber(0,255);
+            
+            return "rgb(" + red + "," + green + "," + blue + ")";
+        }   
+
+        // 判断2个矩形是否碰撞
+        function isTwoRectangleHit(rect1,rect2){
+            if (rect1.x+rect1.w>rect2.x && rect1.x<rect2.x+rect2.w
+                && rect1.y+rect1.h>rect2.y && rect1.y<rect2.y+rect2.h){
+                    return true;
+                }
+            return false;	
+        }        
+        
+        function Pic(id,x,y,w,h,speed,imgName,imageObj){
+            this.id = id;
+            this.x = x;
+            this.y = y;
+            this.w =w;
+            this.h=h;
+            this.speed =speed;
+            this.imgName = imgName;
+            this.imageObj = imageObj;
+            
+            this.draw = function(){
+                ctx.drawImage(this.imageObj,this.x,this.y,this.w,this.h);
+                
+                //ctx.beginPath();
+				//ctx.strokeStyle="yellow";
+				//ctx.font = "normal normal 10px 宋体";
+                //var cnt = 0;
+                //if (OBJ_CNT_DICT.hasOwnProperty(this.imgName)){
+                //    cnt = OBJ_CNT_DICT[this.imgName]["cnt"];
+                //}
+				//ctx.strokeText(this.id+":"+this.imgName+":"+cnt,this.x,this.y-5);
+				//ctx.closePath();
+            }
+            
+            this.update = function(){
+                this.draw();
+                this.y+=speed;
+                
+                if (this.y > canvas.height-PIC_H){
+                    SCORE -= 10;
+                    PIC_ARR.removeArrElement(this);
+                }
+            }
+        }
+        
+        function Char(code,charStr,x,y,speed){
+            this.code = code;
+            this.charStr = charStr;
+            this.x = x;
+            this.y = y;
+            this.speed =speed;
+            
+            this.draw = function(){
+                ctx.beginPath();
+				ctx.strokeStyle="white";
+				ctx.font = "normal normal 30px 宋体";
+				ctx.strokeText(this.charStr,this.x,this.y-5);
+				ctx.closePath();
+            }
+            
+            this.update = function(){
+                this.draw();
+                this.y+=speed;
+                
+                if (this.y > canvas.height){
+                    CHAR_OBJ_ARR.removeArrElement(this);
+                }
+            }
+        }
+        
+        function Bomb(x,y,w,h,speed,imgName,imageObj){
+            this.x = x;
+            this.y = y;
+            this.w =w;
+            this.h=h;
+            this.speed =speed;
+            this.imgName = imgName;
+            this.imageObj = imageObj;
+            
+            this.draw = function(){
+                ctx.drawImage(this.imageObj,this.x,this.y,this.w,this.h);
+            }
+            
+            this.update = function(){
+                this.draw();
+                this.checkCollision();
+                this.y-=speed;
+                
+                if (this.y <= 0){
+                    BOMB_ARR.removeArrElement(this);
+                }
+            }
+            
+            this.checkCollision = function(){
+                for (var i=0;i<PIC_ARR.length;i++){
+                    if (isTwoRectangleHit(PIC_ARR[i],this)){
+                        BOMB_ARR.removeArrElement(this);
+                        PIC_ARR.removeArrElement(PIC_ARR[i]);
+                        SCORE += 10;
+                        break;
+                    }
+                }
+            }            
+        }        
+        
+        function Player(x,y,w,h,speed){
+            this.x = x;
+            this.y = y;
+            this.w = w;
+            this.h = h;
+            this.speed = speed;
+            
+            this.draw = function(){
+                ctx.beginPath();
+                ctx.fillStyle="yellow";
+                ctx.rect(this.x,this.y,this.w,this.h);
+                ctx.fill();
+                ctx.closePath();
+            }
+            
+            this.update = function(){
+                this.draw();
+            }
+            
+            this.shoot = function(){
+                for (var i=0;i<1;i++){
+                    var speed = randomNumber(2,5);
+                    var imageIndex = randomNumber(0,IMAGE_OBJ_ARR.length-1);
+                    var imageObj = BOMB_IMAGE;
+                    var imgName = imageObj.currentSrc.substr(imageObj.currentSrc.lastIndexOf("/")+1);
+                    var bomb = new Bomb(this.x+i*PIC_W+i*10,this.y-PIC_H,PIC_W,PIC_H,speed,imgName,imageObj);
+                    BOMB_ARR.push(bomb);
+                }
+            }
+        }
+        
+        function createTank(){
+            if (PIC_ARR.length > 40){
+                return;
+            }
+            var x = randomNumber(0,canvas.width-PIC_W);
+            var y = 0;
+            var canCreate = true;
+            if (PIC_ARR.length>0){
+                for (var i=0;i<PIC_ARR.length;i++){
+                    var xDistance = Math.abs(x-PIC_ARR[i].x);
+                    var yDistance = Math.abs(y-PIC_ARR[i].y)
+                    if (xDistance < PIC_W && yDistance < PIC_H){
+                        canCreate = false;
+                    }
+                }
+            }
+            
+            if (canCreate){
+                OBJ_ID++;
+                var speed = randomNumber(1,8);
+                var imageIndex = randomNumber(0,IMAGE_OBJ_ARR.length-1);
+                var imageObj = IMAGE_OBJ_ARR[imageIndex];
+                var imgName = imageObj.currentSrc.substr(imageObj.currentSrc.lastIndexOf("/")+1);
+                var pic = new Pic(OBJ_ID,x,y,PIC_W,PIC_H,speed,imgName,imageObj);
+                PIC_ARR.push(pic);
+                
+                if (imgName != "" && imgName != null && imgName != undefined){
+                    if (!OBJ_CNT_DICT.hasOwnProperty(imgName)){
+                        OBJ_CNT_DICT[imgName] = {};
+                        OBJ_CNT_DICT[imgName]["cnt"] = 1;
+                        OBJ_CNT_DICT[imgName]["color"] = randomRgb();
+                    }else{
+                        var newCnt = OBJ_CNT_DICT[imgName]["cnt"]+1;
+                        OBJ_CNT_DICT[imgName]["cnt"]=newCnt;
+                    }
+                }
+            }
+        }
+        
+        function createChar(){
+            if (CHAR_OBJ_ARR.length > 15){
+                return;
+            }
+            var charArr = "abcdefghijklmnopqrstuvwxyz";
+            //charArr = "ㅂㅈㄱㅅㅛㄴㅇㅎㅋㅌㅊㅊㅍ호ㅓㅗㅓ";
+            var randCharIndex = randomNumber(0,charArr.length-1);
+            var charStr = charArr[randCharIndex];
+            var charCode = charStr.charCodeAt();
+            var x = randomNumber(0,canvas.width);
+            var y = 0;
+
+            var speed = randomNumber(0.5,2);
+            var charObj = new Char(charCode,charStr,x,y,speed);
+            CHAR_OBJ_ARR.push(charObj);
+        }
+        
+        function animate(){
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            requestAnimationFrame(animate);
+            G_CYCLE++;
+
+            if (G_CYCLE % 10 == 0){
+                createTank();
+                createChar();
+            }
+            
+            if (G_CYCLE % 60 == 0){
+                console.log("美女数:"+PIC_ARR.length+" 炮弹数:"+BOMB_ARR.length);
+            }
+            
+            for (var i=0;i<PIC_ARR.length;i++){
+                PIC_ARR[i].update();
+            }
+            
+            for (var i=0;i<BOMB_ARR.length;i++){
+                BOMB_ARR[i].update();
+            }
+            
+            for (var i=0;i<CHAR_OBJ_ARR.length;i++){
+                CHAR_OBJ_ARR[i].update();
+            }
+            
+            PLAYER_OBJ.update();
+            
+            ctx.beginPath();
+            ctx.strokeStyle = "yellow";
+            ctx.strokeText("得分:"+SCORE,canvas.width-140,40);
+            ctx.closePath();
+            
+            if (false){
+                for (var i=0;i<PIC_ARR.length;i++){
+                    for (var j=i+1;j<PIC_ARR.length;j++){
+                        if (PIC_ARR[i].imageObj === PIC_ARR[j].imageObj){
+                            //console.log(PIC_ARR[i].id+"-->"+PIC_ARR[j].id);
+                            ctx.beginPath();
+                            ctx.moveTo (PIC_ARR[i].x+PIC_W/2,PIC_ARR[i].y+PIC_H/2);       //设置起点状态
+                            ctx.lineTo (PIC_ARR[j].x+PIC_W/2,PIC_ARR[j].y+PIC_H/2);       //设置末端状态
+                            //console.log((PIC_ARR[i].x+PIC_W/2)+","+(PIC_ARR[i].y+PIC_H/2)+" -- "+(PIC_ARR[j].x+PIC_W/2)+","+(PIC_ARR[j].y+PIC_H/2));
+                            ctx.lineWidth = 2;                          //设置线宽状态
+                            if (PIC_ARR[i].hasOwnProperty("imgName")){
+                                var imgName = PIC_ARR[i].imgName;
+                                if (OBJ_CNT_DICT[imgName].hasOwnProperty("color")){
+                                    var color = OBJ_CNT_DICT[imgName]["color"];
+                                    ctx.strokeStyle = color;
+                                }else{
+                                    ctx.strokeStyle = "red";
+                                }
+                            }else{
+                                ctx.strokeStyle = "red";
+                            }
+                            ctx.stroke();               //进行绘制
+                            ctx.closePath();
+                        }
+                    } 
+                }
+            }
+            
+        }
+        
+        animate();
+        
+    </script>
+</body>
+</html>
